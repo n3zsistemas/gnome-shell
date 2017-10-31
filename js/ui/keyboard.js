@@ -68,45 +68,42 @@ var Key = new Lang.Class({
                                       style_class: 'keyboard-key' });
 
         button.key_width = this._key.width;
-        button.connect('button-press-event', Lang.bind(this,
-            function () {
+        button.connect('button-press-event', () => {
+            key.press();
+            return Clutter.EVENT_PROPAGATE;
+        });
+        button.connect('button-release-event', () => {
+            key.release();
+            return Clutter.EVENT_PROPAGATE;
+        });
+        button.connect('touch-event', (actor, event) => {
+            let device = event.get_device();
+            let sequence = event.get_event_sequence();
+
+            // We only handle touch events here on wayland. On X11
+            // we do get emulated pointer events, which already works
+            // for single-touch cases. Besides, the X11 passive touch grab
+            // set up by Mutter will make us see first the touch events
+            // and later the pointer events, so it will look like two
+            // unrelated series of events, we want to avoid double handling
+            // in these cases.
+            if (!Meta.is_wayland_compositor())
+                return Clutter.EVENT_PROPAGATE;
+
+            if (!this._touchPressed &&
+                event.type() == Clutter.EventType.TOUCH_BEGIN) {
+                device.sequence_grab(sequence, actor);
+                this._touchPressed = true;
                 key.press();
-                return Clutter.EVENT_PROPAGATE;
-            }));
-        button.connect('button-release-event', Lang.bind(this,
-            function () {
+            } else if (this._touchPressed &&
+                       event.type() == Clutter.EventType.TOUCH_END &&
+                       device.sequence_get_grabbed_actor(sequence) == actor) {
+                device.sequence_ungrab(sequence);
+                this._touchPressed = false;
                 key.release();
-                return Clutter.EVENT_PROPAGATE;
-            }));
-        button.connect('touch-event', Lang.bind(this,
-            function (actor, event) {
-                let device = event.get_device();
-                let sequence = event.get_event_sequence();
-
-                // We only handle touch events here on wayland. On X11
-                // we do get emulated pointer events, which already works
-                // for single-touch cases. Besides, the X11 passive touch grab
-                // set up by Mutter will make us see first the touch events
-                // and later the pointer events, so it will look like two
-                // unrelated series of events, we want to avoid double handling
-                // in these cases.
-                if (!Meta.is_wayland_compositor())
-                    return Clutter.EVENT_PROPAGATE;
-
-                if (!this._touchPressed &&
-                    event.type() == Clutter.EventType.TOUCH_BEGIN) {
-                    device.sequence_grab(sequence, actor);
-                    this._touchPressed = true;
-                    key.press();
-                } else if (this._touchPressed &&
-                           event.type() == Clutter.EventType.TOUCH_END &&
-                           device.sequence_get_grabbed_actor(sequence) == actor) {
-                    device.sequence_ungrab(sequence);
-                    this._touchPressed = false;
-                    key.release();
-                }
-                return Clutter.EVENT_PROPAGATE;
-            }));
+            }
+            return Clutter.EVENT_PROPAGATE;
+        });
 
         return button;
     },
@@ -176,8 +173,8 @@ var Keyboard = new Lang.Class({
 
         Caribou.DisplayAdapter.set_default(new LocalAdapter());
 
-        Meta.get_backend().connect('last-device-changed', Lang.bind(this,
-            function (backend, deviceId) {
+        Meta.get_backend().connect('last-device-changed', 
+            (backend, deviceId) => {
                 let manager = Clutter.DeviceManager.get_default();
                 let device = manager.get_device(deviceId);
 
@@ -185,7 +182,7 @@ var Keyboard = new Lang.Class({
                     this._lastDeviceId = deviceId;
                     this._syncEnabled();
                 }
-            }));
+            });
         this._sync();
 
         this._showIdleId = 0;
@@ -194,9 +191,9 @@ var Keyboard = new Lang.Class({
         this._capturedPress = false;
 
         this._keyboardVisible = false;
-        Main.layoutManager.connect('keyboard-visible-changed', Lang.bind(this, function(o, visible) {
+        Main.layoutManager.connect('keyboard-visible-changed', (o, visible) => {
             this._keyboardVisible = visible;
-        }));
+        });
         this._keyboardRequested = false;
         this._keyboardRestingId = 0;
 
@@ -222,7 +219,7 @@ var Keyboard = new Lang.Class({
     _updateCaretPosition (accessible) {
         if (this._updateCaretPositionId)
             GLib.source_remove(this._updateCaretPositionId);
-        this._updateCaretPositionId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, Lang.bind(this, function() {
+        this._updateCaretPositionId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
             this._updateCaretPositionId = 0;
 
             let currentWindow = global.screen.get_display().focus_window;
@@ -253,7 +250,7 @@ var Keyboard = new Lang.Class({
             }
 
             return GLib.SOURCE_REMOVE;
-        }));
+        });
 
         GLib.Source.set_name_by_id(this._updateCaretPositionId, '[gnome-shell] this._updateCaretPosition');
     },
@@ -399,11 +396,10 @@ var Keyboard = new Lang.Class({
         }
 
         if (!this._showIdleId) {
-          this._showIdleId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE,
-                                           Lang.bind(this, function() {
-                                               this.show(Main.layoutManager.focusIndex);
-                                               return GLib.SOURCE_REMOVE;
-                                           }));
+          this._showIdleId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+              this.show(Main.layoutManager.focusIndex);
+              return GLib.SOURCE_REMOVE;
+          });
           GLib.Source.set_name_by_id(this._showIdleId, '[gnome-shell] this.show');
         }
     },
@@ -479,7 +475,7 @@ var Keyboard = new Lang.Class({
                     key.connect('key-released', Lang.bind(this, this.hide));
                 }
 
-                button.connect('show-subkeys', Lang.bind(this, function() {
+                button.connect('show-subkeys', () => {
                     if (this._subkeysBoxPointer)
                         this._subkeysBoxPointer.hide(BoxPointer.PopupAnimation.FULL);
                     this._subkeysBoxPointer = button.subkeys;
@@ -487,10 +483,10 @@ var Keyboard = new Lang.Class({
                     if (!this._capturedEventId)
                         this._capturedEventId = this.actor.connect('captured-event',
                                                                    Lang.bind(this, this._onCapturedEvent));
-                }));
-                button.connect('hide-subkeys', Lang.bind(this, function() {
+                });
+                button.connect('hide-subkeys', () => {
                     this._hideSubkeys();
-                }));
+                });
             }
             keyboard_row.add(left_box, { expand: true, x_fill: false, x_align: St.Align.START });
             keyboard_row.add(center_box, { expand: true, x_fill: false, x_align: St.Align.MIDDLE });
@@ -633,11 +629,11 @@ var Keyboard = new Lang.Class({
         this._clearKeyboardRestTimer();
         this._keyboardRestingId = GLib.timeout_add(GLib.PRIORITY_DEFAULT,
                                                    KEYBOARD_REST_TIME,
-                                                   Lang.bind(this, function() {
+                                                   () => {
                                                        this._clearKeyboardRestTimer();
                                                        this._show(monitor);
                                                        return GLib.SOURCE_REMOVE;
-                                                   }));
+                                                   });
         GLib.Source.set_name_by_id(this._keyboardRestingId, '[gnome-shell] this._clearKeyboardRestTimer');
     },
 
@@ -664,11 +660,11 @@ var Keyboard = new Lang.Class({
         this._clearKeyboardRestTimer();
         this._keyboardRestingId = GLib.timeout_add(GLib.PRIORITY_DEFAULT,
                                                    KEYBOARD_REST_TIME,
-                                                   Lang.bind(this, function() {
+                                                   () => {
                                                        this._clearKeyboardRestTimer();
                                                        this._hide();
                                                        return GLib.SOURCE_REMOVE;
-                                                   }));
+                                                   });
         GLib.Source.set_name_by_id(this._keyboardRestingId, '[gnome-shell] this._clearKeyboardRestTimer');
     },
 

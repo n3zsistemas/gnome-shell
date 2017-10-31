@@ -144,9 +144,9 @@ var DashItemContainer = new Lang.Class({
                          { opacity: 0,
                            time: DASH_ITEM_LABEL_HIDE_TIME,
                            transition: 'easeOutQuad',
-                           onComplete: Lang.bind(this, function() {
+                           onComplete: () => {
                                this.label.hide();
-                           })
+                           }
                          });
     },
 
@@ -199,9 +199,9 @@ var DashItemContainer = new Lang.Class({
                            childOpacity: 0,
                            time: DASH_ANIMATION_TIME,
                            transition: 'easeOutQuad',
-                           onComplete: Lang.bind(this, function() {
+                           onComplete: () => {
                                this.destroy();
-                           })
+                           }
                          });
     },
 
@@ -305,11 +305,10 @@ var ShowAppsIcon = new Lang.Class({
 
         let id = app.get_id();
 
-        Meta.later_add(Meta.LaterType.BEFORE_REDRAW, Lang.bind(this,
-            function () {
-                AppFavorites.getAppFavorites().removeFavorite(id);
-                return false;
-            }));
+        Meta.later_add(Meta.LaterType.BEFORE_REDRAW, () => {
+            AppFavorites.getAppFavorites().removeFavorite(id);
+            return false;
+        });
 
         return true;
     }
@@ -419,21 +418,20 @@ var Dash = new Lang.Class({
         this._container.add_actor(this._showAppsIcon);
 
         this.actor = new St.Bin({ child: this._container });
-        this.actor.connect('notify::height', Lang.bind(this,
-            function() {
-                if (this._maxHeight != this.actor.height)
-                    this._queueRedisplay();
-                this._maxHeight = this.actor.height;
-            }));
+        this.actor.connect('notify::height', () => {
+            if (this._maxHeight != this.actor.height)
+                this._queueRedisplay();
+            this._maxHeight = this.actor.height;
+        });
 
         this._workId = Main.initializeDeferredWork(this._box, Lang.bind(this, this._redisplay));
 
         this._appSystem = Shell.AppSystem.get_default();
 
-        this._appSystem.connect('installed-changed', Lang.bind(this, function() {
+        this._appSystem.connect('installed-changed', () => {
             AppFavorites.getAppFavorites().reload();
             this._queueRedisplay();
-        }));
+        });
         AppFavorites.getAppFavorites().connect('changed', Lang.bind(this, this._queueRedisplay));
         this._appSystem.connect('app-state-changed', Lang.bind(this, this._queueRedisplay));
 
@@ -513,22 +511,22 @@ var Dash = new Lang.Class({
     },
 
     _hookUpLabel(item, appIcon) {
-        item.child.connect('notify::hover', Lang.bind(this, function() {
+        item.child.connect('notify::hover', () => {
             this._syncLabel(item, appIcon);
-        }));
+        });
 
-        let id = Main.overview.connect('hiding', Lang.bind(this, function() {
+        let id = Main.overview.connect('hiding', () => {
             this._labelShowing = false;
             item.hideLabel();
-        }));
-        item.child.connect('destroy', function() {
+        });
+        item.child.connect('destroy', () => {
             Main.overview.disconnect(id);
         });
 
         if (appIcon) {
-            appIcon.connect('sync-tooltip', Lang.bind(this, function() {
+            appIcon.connect('sync-tooltip', () => {
                 this._syncLabel(item, appIcon);
-            }));
+            });
         }
     },
 
@@ -538,19 +536,19 @@ var Dash = new Lang.Class({
                                                showLabel: false });
         if (appIcon._draggable) {
             appIcon._draggable.connect('drag-begin',
-                                       Lang.bind(this, function() {
+                                       () => {
                                            appIcon.actor.opacity = 50;
-                                       }));
+                                       });
             appIcon._draggable.connect('drag-end',
-                                       Lang.bind(this, function() {
+                                       () => {
                                            appIcon.actor.opacity = 255;
-                                       }));
+                                       });
         }
 
         appIcon.connect('menu-state-changed',
-                        Lang.bind(this, function(appIcon, opened) {
+                        (appIcon, opened) => {
                             this._itemMenuStateChanged(item, opened);
-                        }));
+                        });
 
         let item = new DashItemContainer();
         item.setChild(appIcon.actor);
@@ -586,12 +584,12 @@ var Dash = new Lang.Class({
             if (this._showLabelTimeoutId == 0) {
                 let timeout = this._labelShowing ? 0 : DASH_ITEM_HOVER_TIMEOUT;
                 this._showLabelTimeoutId = Mainloop.timeout_add(timeout,
-                    Lang.bind(this, function() {
+                    () => {
                         this._labelShowing = true;
                         item.showLabel();
                         this._showLabelTimeoutId = 0;
                         return GLib.SOURCE_REMOVE;
-                    }));
+                    });
                 GLib.Source.set_name_by_id(this._showLabelTimeoutId, '[gnome-shell] item.showLabel');
                 if (this._resetHoverTimeoutId > 0) {
                     Mainloop.source_remove(this._resetHoverTimeoutId);
@@ -605,11 +603,11 @@ var Dash = new Lang.Class({
             item.hideLabel();
             if (this._labelShowing) {
                 this._resetHoverTimeoutId = Mainloop.timeout_add(DASH_ITEM_HOVER_TIMEOUT,
-                    Lang.bind(this, function() {
+                    () => {
                         this._labelShowing = false;
                         this._resetHoverTimeoutId = 0;
                         return GLib.SOURCE_REMOVE;
-                    }));
+                    });
                 GLib.Source.set_name_by_id(this._resetHoverTimeoutId, '[gnome-shell] this._labelShowing');
             }
         }
@@ -620,7 +618,7 @@ var Dash = new Lang.Class({
         // icons (i.e. ignoring drag placeholders) and which are not
         // animating out (which means they will be destroyed at the end of
         // the animation)
-        let iconChildren = this._box.get_children().filter(function(actor) {
+        let iconChildren = this._box.get_children().filter(actor => {
             return actor.child &&
                    actor.child._delegate &&
                    actor.child._delegate.icon &&
@@ -659,9 +657,7 @@ var Dash = new Lang.Class({
 
         let availSize = availHeight / iconChildren.length;
 
-        let iconSizes = baseIconSizes.map(function(s) {
-            return s * scaleFactor;
-        });
+        let iconSizes = baseIconSizes.map(s => s * scaleFactor);
 
         let newIconSize = baseIconSizes[0];
         for (let i = 0; i < iconSizes.length; i++) {
@@ -712,15 +708,13 @@ var Dash = new Lang.Class({
 
         let running = this._appSystem.get_running();
 
-        let children = this._box.get_children().filter(function(actor) {
+        let children = this._box.get_children().filter(actor => {
                 return actor.child &&
                        actor.child._delegate &&
                        actor.child._delegate.app;
             });
         // Apps currently in the dash
-        let oldApps = children.map(function(actor) {
-                return actor.child._delegate.app;
-            });
+        let oldApps = children.map(actor => actor.child._delegate.app);
         // Apps supposed to be in the dash
         let newApps = [];
 
@@ -786,7 +780,7 @@ var Dash = new Lang.Class({
             let nextApp = newApps.length > newIndex + 1 ? newApps[newIndex + 1]
                                                         : null;
             let insertHere = nextApp && nextApp == oldApp;
-            let alreadyRemoved = removedActors.reduce(function(result, actor) {
+            let alreadyRemoved = removedActors.reduce((result, actor) => {
                 let removedApp = actor.child._delegate.app;
                 return result || removedApp == newApp;
             }, false);
@@ -842,10 +836,9 @@ var Dash = new Lang.Class({
         if (this._dragPlaceholder) {
             this._animatingPlaceholdersCount++;
             this._dragPlaceholder.animateOutAndDestroy();
-            this._dragPlaceholder.connect('destroy',
-                Lang.bind(this, function() {
-                    this._animatingPlaceholdersCount--;
-                }));
+            this._dragPlaceholder.connect('destroy', () => {
+                this._animatingPlaceholdersCount--;
+            });
             this._dragPlaceholder = null;
         }
         this._dragPlaceholderPos = -1;
@@ -972,15 +965,14 @@ var Dash = new Lang.Class({
         if (!this._dragPlaceholder)
             return true;
 
-        Meta.later_add(Meta.LaterType.BEFORE_REDRAW, Lang.bind(this,
-            function () {
-                let appFavorites = AppFavorites.getAppFavorites();
-                if (srcIsFavorite)
-                    appFavorites.moveFavoriteToPos(id, favPos);
-                else
-                    appFavorites.addFavoriteAtPos(id, favPos);
-                return false;
-            }));
+        Meta.later_add(Meta.LaterType.BEFORE_REDRAW, () => {
+            let appFavorites = AppFavorites.getAppFavorites();
+            if (srcIsFavorite)
+                appFavorites.moveFavoriteToPos(id, favPos);
+            else
+                appFavorites.addFavoriteAtPos(id, favPos);
+            return false;
+        });
 
         return true;
     }
