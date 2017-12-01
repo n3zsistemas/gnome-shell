@@ -682,12 +682,10 @@ var Keyboard = new Lang.Class({
 
     _onLevelChanged: function (level) {
         this._setActiveLayer(level);
-        this._redraw();
     },
 
     _onGroupChanged: function () {
         this._setActiveLayer(0);
-        this._redraw();
     },
 
     _onKeyboardGroupsChanged: function(keyboard) {
@@ -704,6 +702,7 @@ var Keyboard = new Lang.Class({
         }
 
         this._current_page = layers[activeLevel];
+        this._redraw();
         this._current_page.show();
     },
 
