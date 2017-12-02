@@ -33,7 +33,7 @@ var Key = new Lang.Class({
     _init (key) {
         this._key = key;
         this.actor = this._makeKey(key, GLib.markup_escape_text(key.label, -1));
-        this.actor.connect('destroy', Lang.bind(this, this._onDestroy));
+        this.actor.connect('destroy', this._onDestroy.bind(this));
 
         this._extended_keys = this._key.get_extended_keys();
         this._extended_keyboard = null;
@@ -42,7 +42,7 @@ var Key = new Lang.Class({
             this._key.latch = true;
 
         if (this._extended_keys.length > 0) {
-            this._key.connect('notify::show-subkeys', Lang.bind(this, this._onShowSubkeysChanged));
+            this._key.connect('notify::show-subkeys', this._onShowSubkeysChanged.bind(this));
             this._boxPointer = new BoxPointer.BoxPointer(St.Side.BOTTOM,
                                                          { x_fill: true,
                                                            y_fill: true,
@@ -159,16 +159,16 @@ var Keyboard = new Lang.Class({
         this._focusInExtendedKeys = false;
 
         this._focusCaretTracker = new FocusCaretTracker.FocusCaretTracker();
-        this._focusCaretTracker.connect('focus-changed', Lang.bind(this, this._onFocusChanged));
-        this._focusCaretTracker.connect('caret-moved', Lang.bind(this, this._onCaretMoved));
+        this._focusCaretTracker.connect('focus-changed', this._onFocusChanged.bind(this));
+        this._focusCaretTracker.connect('caret-moved', this._onCaretMoved.bind(this));
         this._currentAccessible = null;
         this._caretTrackingEnabled = false;
         this._updateCaretPositionId = 0;
 
         this._keyboardSettings = new Gio.Settings({ schema_id: KEYBOARD_SCHEMA });
-        this._keyboardSettings.connect('changed', Lang.bind(this, this._sync));
+        this._keyboardSettings.connect('changed', this._sync.bind(this));
         this._a11yApplicationsSettings = new Gio.Settings({ schema_id: A11Y_APPLICATIONS_SCHEMA });
-        this._a11yApplicationsSettings.connect('changed', Lang.bind(this, this._syncEnabled));
+        this._a11yApplicationsSettings.connect('changed', this._syncEnabled.bind(this));
         this._lastDeviceId = null;
 
         Caribou.DisplayAdapter.set_default(new LocalAdapter());
@@ -197,7 +197,7 @@ var Keyboard = new Lang.Class({
         this._keyboardRequested = false;
         this._keyboardRestingId = 0;
 
-        Main.layoutManager.connect('monitors-changed', Lang.bind(this, this._redraw));
+        Main.layoutManager.connect('monitors-changed', this._redraw.bind(this));
         this._redraw();
     },
 
@@ -365,10 +365,10 @@ var Keyboard = new Lang.Class({
         // this means enforcing LTR for all locales.
         this.actor.text_direction = Clutter.TextDirection.LTR;
 
-        this._keyboardNotifyId = this._keyboard.connect('notify::active-group', Lang.bind(this, this._onGroupChanged));
-        this._keyboardGroupAddedId = this._keyboard.connect('group-added', Lang.bind(this, this._onGroupAdded));
-        this._keyboardGroupRemovedId = this._keyboard.connect('group-removed', Lang.bind(this, this._onGroupRemoved));
-        this._focusNotifyId = global.stage.connect('notify::key-focus', Lang.bind(this, this._onKeyFocusChanged));
+        this._keyboardNotifyId = this._keyboard.connect('notify::active-group', this._onGroupChanged.bind(this));
+        this._keyboardGroupAddedId = this._keyboard.connect('group-added', this._onGroupAdded.bind(this));
+        this._keyboardGroupRemovedId = this._keyboard.connect('group-removed', this._onGroupRemoved.bind(this));
+        this._focusNotifyId = global.stage.connect('notify::key-focus', this._onKeyFocusChanged.bind(this));
 
         this._createSource();
     },
@@ -406,7 +406,7 @@ var Keyboard = new Lang.Class({
 
     _createLayersForGroup (gname) {
         let group = this._keyboard.get_group(gname);
-        group.connect('notify::active-level', Lang.bind(this, this._onLevelChanged));
+        group.connect('notify::active-level', this._onLevelChanged.bind(this));
         let layers = {};
         let levels = group.get_levels();
         for (let j = 0; j < levels.length; ++j) {
@@ -472,7 +472,7 @@ var Keyboard = new Lang.Class({
                     break;
                 }
                 if (key.name == 'Caribou_Prefs') {
-                    key.connect('key-released', Lang.bind(this, this.hide));
+                    key.connect('key-released', this.hide.bind(this));
                 }
 
                 button.connect('show-subkeys', () => {
@@ -482,7 +482,7 @@ var Keyboard = new Lang.Class({
                     this._subkeysBoxPointer.show(BoxPointer.PopupAnimation.FULL);
                     if (!this._capturedEventId)
                         this._capturedEventId = this.actor.connect('captured-event',
-                                                                   Lang.bind(this, this._onCapturedEvent));
+                                                                   this._onCapturedEvent.bind(this));
                 });
                 button.connect('hide-subkeys', () => {
                     this._hideSubkeys();
@@ -757,9 +757,9 @@ var LocalAdapter = new Lang.Class({
 
         this._inputSourceManager = InputSourceManager.getInputSourceManager();
         this._sourceChangedId = this._inputSourceManager.connect('current-source-changed',
-                                                                 Lang.bind(this, this._onSourceChanged));
+                                                                 this._onSourceChanged.bind(this));
         this._sourcesModifiedId = this._inputSourceManager.connect ('sources-changed',
-                                                                    Lang.bind(this, this._onSourcesModified));
+                                                                    this._onSourcesModified.bind(this));
     },
 
     _onSourcesModified () {

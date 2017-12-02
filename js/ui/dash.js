@@ -250,7 +250,7 @@ var ShowAppsIcon = new Lang.Class({
         this.icon = new IconGrid.BaseIcon(_("Show Applications"),
                                            { setSizeManually: true,
                                              showLabel: false,
-                                             createIcon: Lang.bind(this, this._createIcon) });
+                                             createIcon: this._createIcon.bind(this) });
         this.toggleButton.add_actor(this.icon.actor);
         this.toggleButton._delegate = this;
 
@@ -424,7 +424,7 @@ var Dash = new Lang.Class({
             this._maxHeight = this.actor.height;
         });
 
-        this._workId = Main.initializeDeferredWork(this._box, Lang.bind(this, this._redisplay));
+        this._workId = Main.initializeDeferredWork(this._box, this._redisplay.bind(this));
 
         this._appSystem = Shell.AppSystem.get_default();
 
@@ -432,15 +432,15 @@ var Dash = new Lang.Class({
             AppFavorites.getAppFavorites().reload();
             this._queueRedisplay();
         });
-        AppFavorites.getAppFavorites().connect('changed', Lang.bind(this, this._queueRedisplay));
-        this._appSystem.connect('app-state-changed', Lang.bind(this, this._queueRedisplay));
+        AppFavorites.getAppFavorites().connect('changed', this._queueRedisplay.bind(this));
+        this._appSystem.connect('app-state-changed', this._queueRedisplay.bind(this));
 
         Main.overview.connect('item-drag-begin',
-                              Lang.bind(this, this._onDragBegin));
+                              this._onDragBegin.bind(this));
         Main.overview.connect('item-drag-end',
-                              Lang.bind(this, this._onDragEnd));
+                              this._onDragEnd.bind(this));
         Main.overview.connect('item-drag-cancelled',
-                              Lang.bind(this, this._onDragCancelled));
+                              this._onDragCancelled.bind(this));
 
         // Translators: this is the name of the dock/favorites area on
         // the left of the overview
@@ -450,7 +450,7 @@ var Dash = new Lang.Class({
     _onDragBegin() {
         this._dragCancelled = false;
         this._dragMonitor = {
-            dragMotion: Lang.bind(this, this._onDragMotion)
+            dragMotion: this._onDragMotion.bind(this)
         };
         DND.addDragMonitor(this._dragMonitor);
 

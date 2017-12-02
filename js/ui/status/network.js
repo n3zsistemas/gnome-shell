@@ -130,10 +130,10 @@ var NMConnectionItem = new Lang.Class({
 
     _buildUI() {
         this.labelItem = new PopupMenu.PopupMenuItem('');
-        this.labelItem.connect('activate', Lang.bind(this, this._toggle));
+        this.labelItem.connect('activate', this._toggle.bind(this));
 
         this.radioItem = new PopupMenu.PopupMenuItem(this._connection.get_id(), false);
-        this.radioItem.connect('activate', Lang.bind(this, this._activate));
+        this.radioItem.connect('activate', this._activate.bind(this));
     },
 
     destroy() {
@@ -202,7 +202,7 @@ var NMConnectionItem = new Lang.Class({
 
         if (this._activeConnection)
             this._activeConnectionChangedId = this._activeConnection.connect('notify::state',
-                                                                             Lang.bind(this, this._connectionStateChanged));
+                                                                             this._connectionStateChanged.bind(this));
 
         this._sync();
     },
@@ -226,7 +226,7 @@ var NMConnectionSection = new Lang.Class({
         this.item.menu.addMenuItem(this._labelSection);
         this.item.menu.addMenuItem(this._radioSection);
 
-        this._notifyConnectivityId = this._client.connect('notify::connectivity', Lang.bind(this, this._iconChanged));
+        this._notifyConnectivityId = this._client.connect('notify::connectivity', this._iconChanged.bind(this));
     },
 
     destroy() {
@@ -297,7 +297,7 @@ var NMConnectionSection = new Lang.Class({
         let pos = this._connections.indexOf(connection);
 
         this._connections.splice(pos, 1);
-        pos = Util.insertSorted(this._connections, connection, Lang.bind(this, this._connectionSortFunction));
+        pos = Util.insertSorted(this._connections, connection, this._connectionSortFunction.bind(this));
         this._labelSection.moveMenuItem(item.labelItem, pos);
         this._radioSection.moveMenuItem(item.radioItem, pos);
 
@@ -313,9 +313,9 @@ var NMConnectionSection = new Lang.Class({
         item.connect('activation-failed', (item, reason) => {
             this.emit('activation-failed', reason);
         });
-        item.connect('name-changed', Lang.bind(this, this._sync));
+        item.connect('name-changed', this._sync.bind(this));
 
-        let pos = Util.insertSorted(this._connections, connection, Lang.bind(this, this._connectionSortFunction));
+        let pos = Util.insertSorted(this._connections, connection, this._connectionSortFunction.bind(this));
         this._labelSection.addMenuItem(item.labelItem, pos);
         this._radioSection.addMenuItem(item.radioItem, pos);
         this._connectionItems.set(connection.get_uuid(), item);
@@ -350,11 +350,11 @@ var NMConnectionDevice = new Lang.Class({
         this._settings = settings;
         this._description = '';
 
-        this._autoConnectItem = this.item.menu.addAction(_("Connect"), Lang.bind(this, this._autoConnect));
-        this._deactivateItem = this._radioSection.addAction(_("Turn Off"), Lang.bind(this, this.deactivateConnection));
+        this._autoConnectItem = this.item.menu.addAction(_("Connect"), this._autoConnect.bind(this));
+        this._deactivateItem = this._radioSection.addAction(_("Turn Off"), this.deactivateConnection.bind(this));
 
-        this._stateChangedId = this._device.connect('state-changed', Lang.bind(this, this._deviceStateChanged));
-        this._activeConnectionChangedId = this._device.connect('notify::active-connection', Lang.bind(this, this._activeConnectionChanged));
+        this._stateChangedId = this._device.connect('state-changed', this._deviceStateChanged.bind(this));
+        this._activeConnectionChangedId = this._device.connect('notify::active-connection', this._activeConnectionChanged.bind(this));
     },
 
     _canReachInternet() {
@@ -558,7 +558,7 @@ var NMDeviceModem = new Lang.Class({
             this._mobileDevice = new ModemManager.ModemGsm(device.udi);
 
         if (this._mobileDevice) {
-            this._operatorNameId = this._mobileDevice.connect('notify::operator-name', Lang.bind(this, this._sync));
+            this._operatorNameId = this._mobileDevice.connect('notify::operator-name', this._sync.bind(this));
             this._signalQualityId = this._mobileDevice.connect('notify::signal-quality', () => {
                 this._iconChanged();
             });
@@ -720,11 +720,11 @@ var NMWirelessDialog = new Lang.Class({
         this._device = device;
 
         this._wirelessEnabledChangedId = this._client.connect('notify::wireless-enabled',
-                                                              Lang.bind(this, this._syncView));
+                                                              this._syncView.bind(this));
 
         this._rfkill = Rfkill.getRfkillManager();
         this._airplaneModeChangedId = this._rfkill.connect('airplane-mode-changed',
-                                                           Lang.bind(this, this._syncView));
+                                                           this._syncView.bind(this));
 
         this._networks = [];
         this._buildLayout();
@@ -734,9 +734,9 @@ var NMWirelessDialog = new Lang.Class({
             connection => device.connection_valid(connection)
         );
 
-        this._apAddedId = device.connect('access-point-added', Lang.bind(this, this._accessPointAdded));
-        this._apRemovedId = device.connect('access-point-removed', Lang.bind(this, this._accessPointRemoved));
-        this._activeApChangedId = device.connect('notify::active-access-point', Lang.bind(this, this._activeApChanged));
+        this._apAddedId = device.connect('access-point-added', this._accessPointAdded.bind(this));
+        this._apRemovedId = device.connect('access-point-removed', this._accessPointRemoved.bind(this));
+        this._activeApChangedId = device.connect('notify::active-access-point', this._activeApChanged.bind(this));
 
         // accessPointAdded will also create dialog items
         let accessPoints = device.get_access_points() || [ ];
@@ -749,7 +749,7 @@ var NMWirelessDialog = new Lang.Class({
         this._updateSensitivity();
         this._syncView();
 
-        this._scanTimeoutId = Mainloop.timeout_add_seconds(15, Lang.bind(this, this._onScanTimeout));
+        this._scanTimeoutId = Mainloop.timeout_add_seconds(15, this._onScanTimeout.bind(this));
         GLib.Source.set_name_by_id(this._scanTimeoutId, '[gnome-shell] this._onScanTimeout');
         this._onScanTimeout();
 
@@ -926,10 +926,10 @@ var NMWirelessDialog = new Lang.Class({
 
         this.contentLayout.add(this._stack, { expand: true });
 
-        this._disconnectButton = this.addButton({ action: Lang.bind(this, this.close),
+        this._disconnectButton = this.addButton({ action: this.close.bind(this),
                                                   label: _("Cancel"),
                                                   key: Clutter.Escape });
-        this._connectButton = this.addButton({ action: Lang.bind(this, this._connect),
+        this._connectButton = this.addButton({ action: this._connect.bind(this),
                                                label: _("Connect"),
                                                key: Clutter.Return });
     },
@@ -1075,7 +1075,7 @@ var NMWirelessDialog = new Lang.Class({
         if (accessPoint.get_ssid() == null) {
             // This access point is not visible yet
             // Wait for it to get a ssid
-            accessPoint._notifySsidId = accessPoint.connect('notify::ssid', Lang.bind(this, this._notifySsidCb));
+            accessPoint._notifySsidId = accessPoint.connect('notify::ssid', this._notifySsidCb.bind(this));
             return;
         }
 
@@ -1182,19 +1182,19 @@ var NMDeviceWireless = new Lang.Class({
         this._description = '';
 
         this.item = new PopupMenu.PopupSubMenuMenuItem('', true);
-        this.item.menu.addAction(_("Select Network"), Lang.bind(this, this._showDialog));
+        this.item.menu.addAction(_("Select Network"), this._showDialog.bind(this));
 
         this._toggleItem = new PopupMenu.PopupMenuItem('');
-        this._toggleItem.connect('activate', Lang.bind(this, this._toggleWifi));
+        this._toggleItem.connect('activate', this._toggleWifi.bind(this));
         this.item.menu.addMenuItem(this._toggleItem);
 
         this.item.menu.addSettingsAction(_("Wi-Fi Settings"), 'gnome-wifi-panel.desktop');
 
-        this._wirelessEnabledChangedId = this._client.connect('notify::wireless-enabled', Lang.bind(this, this._sync));
-        this._wirelessHwEnabledChangedId = this._client.connect('notify::wireless-hardware-enabled', Lang.bind(this, this._sync));
-        this._activeApChangedId = this._device.connect('notify::active-access-point', Lang.bind(this, this._activeApChanged));
-        this._stateChangedId = this._device.connect('state-changed', Lang.bind(this, this._deviceStateChanged));
-        this._notifyConnectivityId = this._client.connect('notify::connectivity', Lang.bind(this, this._iconChanged));
+        this._wirelessEnabledChangedId = this._client.connect('notify::wireless-enabled', this._sync.bind(this));
+        this._wirelessHwEnabledChangedId = this._client.connect('notify::wireless-hardware-enabled', this._sync.bind(this));
+        this._activeApChangedId = this._device.connect('notify::active-access-point', this._activeApChanged.bind(this));
+        this._stateChangedId = this._device.connect('state-changed', this._deviceStateChanged.bind(this));
+        this._notifyConnectivityId = this._client.connect('notify::connectivity', this._iconChanged.bind(this));
 
         this._sync();
     },
@@ -1260,7 +1260,7 @@ var NMDeviceWireless = new Lang.Class({
 
     _showDialog() {
         this._dialog = new NMWirelessDialog(this._client, this._device, this._settings);
-        this._dialog.connect('closed', Lang.bind(this, this._dialogClosed));
+        this._dialog.connect('closed', this._dialogClosed.bind(this));
         this._dialog.open();
     },
 
@@ -1283,7 +1283,7 @@ var NMDeviceWireless = new Lang.Class({
 
         if (this._activeAccessPoint) {
             this._strengthChangedId = this._activeAccessPoint.connect('notify::strength',
-                                                                      Lang.bind(this, this._strengthChanged));
+                                                                      this._strengthChanged.bind(this));
         }
 
         this._sync();
@@ -1401,10 +1401,10 @@ var NMVPNConnectionItem = new Lang.Class({
 
     _buildUI() {
         this.labelItem = new PopupMenu.PopupMenuItem('');
-        this.labelItem.connect('activate', Lang.bind(this, this._toggle));
+        this.labelItem.connect('activate', this._toggle.bind(this));
 
         this.radioItem = new PopupMenu.PopupSwitchMenuItem(this._connection.get_id(), false);
-        this.radioItem.connect('toggled', Lang.bind(this, this._toggle));
+        this.radioItem.connect('toggled', this._toggle.bind(this));
     },
 
     _sync() {
@@ -1460,7 +1460,7 @@ var NMVPNConnectionItem = new Lang.Class({
 
         if (this._activeConnection)
             this._activeConnectionChangedId = this._activeConnection.connect('vpn-state-changed',
-                                                                             Lang.bind(this, this._connectionStateChanged));
+                                                                             this._connectionStateChanged.bind(this));
 
         this._sync();
     },
@@ -1555,8 +1555,8 @@ var DeviceCategory = new Lang.Class({
         this.devices = [];
 
         this.section = new PopupMenu.PopupMenuSection();
-        this.section.box.connect('actor-added', Lang.bind(this, this._sync));
-        this.section.box.connect('actor-removed', Lang.bind(this, this._sync));
+        this.section.box.connect('actor-added', this._sync.bind(this));
+        this.section.box.connect('actor-removed', this._sync.bind(this));
         this.addMenuItem(this.section);
 
         this._summaryItem = new PopupMenu.PopupSubMenuMenuItem('', true);
@@ -1635,8 +1635,8 @@ var NMApplet = new Lang.Class({
         this._ctypes[NetworkManager.SETTING_GSM_SETTING_NAME] = NMConnectionCategory.WWAN;
         this._ctypes[NetworkManager.SETTING_VPN_SETTING_NAME] = NMConnectionCategory.VPN;
 
-        NMClient.Client.new_async(null, Lang.bind(this, this._clientGot));
-        NMClient.RemoteSettings.new_async(null, null, Lang.bind(this, this._remoteSettingsGot));
+        NMClient.Client.new_async(null, this._clientGot.bind(this));
+        NMClient.RemoteSettings.new_async(null, null, this._remoteSettingsGot.bind(this));
     },
 
     _clientGot(obj, result) {
@@ -1677,8 +1677,8 @@ var NMApplet = new Lang.Class({
         }
 
         this._vpnSection = new NMVPNSection(this._client);
-        this._vpnSection.connect('activation-failed', Lang.bind(this, this._onActivationFailed));
-        this._vpnSection.connect('icon-changed', Lang.bind(this, this._updateIcon));
+        this._vpnSection.connect('activation-failed', this._onActivationFailed.bind(this));
+        this._vpnSection.connect('icon-changed', this._updateIcon.bind(this));
         this.menu.addMenuItem(this._vpnSection.item);
 
         this._readConnections();
@@ -1687,18 +1687,18 @@ var NMApplet = new Lang.Class({
         this._syncMainConnection();
         this._syncVPNConnections();
 
-        this._client.connect('notify::manager-running', Lang.bind(this, this._syncNMState));
-        this._client.connect('notify::networking-enabled', Lang.bind(this, this._syncNMState));
-        this._client.connect('notify::state', Lang.bind(this, this._syncNMState));
-        this._client.connect('notify::primary-connection', Lang.bind(this, this._syncMainConnection));
-        this._client.connect('notify::activating-connection', Lang.bind(this, this._syncMainConnection));
-        this._client.connect('notify::active-connections', Lang.bind(this, this._syncVPNConnections));
-        this._client.connect('notify::connectivity', Lang.bind(this, this._syncConnectivity));
-        this._client.connect('device-added', Lang.bind(this, this._deviceAdded));
-        this._client.connect('device-removed', Lang.bind(this, this._deviceRemoved));
-        this._settings.connect('new-connection', Lang.bind(this, this._newConnection));
+        this._client.connect('notify::manager-running', this._syncNMState.bind(this));
+        this._client.connect('notify::networking-enabled', this._syncNMState.bind(this));
+        this._client.connect('notify::state', this._syncNMState.bind(this));
+        this._client.connect('notify::primary-connection', this._syncMainConnection.bind(this));
+        this._client.connect('notify::activating-connection', this._syncMainConnection.bind(this));
+        this._client.connect('notify::active-connections', this._syncVPNConnections.bind(this));
+        this._client.connect('notify::connectivity', this._syncConnectivity.bind(this));
+        this._client.connect('device-added', this._deviceAdded.bind(this));
+        this._client.connect('device-removed', this._deviceRemoved.bind(this));
+        this._settings.connect('new-connection', this._newConnection.bind(this));
 
-        Main.sessionMode.connect('updated', Lang.bind(this, this._sessionUpdated));
+        Main.sessionMode.connect('updated', this._sessionUpdated.bind(this));
         this._sessionUpdated();
     },
 
@@ -1787,7 +1787,7 @@ var NMApplet = new Lang.Class({
 
     _addDeviceWrapper(wrapper) {
         wrapper._activationFailedId = wrapper.connect('activation-failed',
-                                                      Lang.bind(this, this._onActivationFailed));
+                                                      this._onActivationFailed.bind(this));
 
         let section = this._devices[wrapper.category].section;
         section.addMenuItem(wrapper.item);
@@ -1854,8 +1854,8 @@ var NMApplet = new Lang.Class({
 
         if (this._mainConnection) {
             if (this._mainConnection._primaryDevice)
-                this._mainConnectionIconChangedId = this._mainConnection._primaryDevice.connect('icon-changed', Lang.bind(this, this._updateIcon));
-            this._mainConnectionStateChangedId = this._mainConnection.connect('notify::state', Lang.bind(this, this._mainConnectionStateChanged));
+                this._mainConnectionIconChangedId = this._mainConnection._primaryDevice.connect('icon-changed', this._updateIcon.bind(this));
+            this._mainConnectionStateChangedId = this._mainConnection.connect('notify::state', this._mainConnectionStateChanged.bind(this));
             this._mainConnectionStateChanged();
         }
 
@@ -1901,8 +1901,8 @@ var NMApplet = new Lang.Class({
             return;
         }
 
-        connection._removedId = connection.connect('removed', Lang.bind(this, this._connectionRemoved));
-        connection._updatedId = connection.connect('updated', Lang.bind(this, this._updateConnection));
+        connection._removedId = connection.connect('removed', this._connectionRemoved.bind(this));
+        connection._updatedId = connection.connect('updated', this._updateConnection.bind(this));
 
         this._updateConnection(connection);
         this._connections.push(connection);
@@ -1910,7 +1910,7 @@ var NMApplet = new Lang.Class({
 
     _readConnections() {
         let connections = this._settings.list_connections();
-        connections.forEach(Lang.bind(this, this._addConnection));
+        connections.forEach(this._addConnection.bind(this));
     },
 
     _newConnection(settings, connection) {
@@ -2050,7 +2050,7 @@ var NMApplet = new Lang.Class({
                                       }
 
                                       this._portalHelperProxy = proxy;
-                                      proxy.connectSignal('Done', Lang.bind(this, this._portalHelperDone));
+                                      proxy.connectSignal('Done', this._portalHelperDone.bind(this));
 
                                       proxy.AuthenticateRemote(path, '', timestamp);
                                   });
