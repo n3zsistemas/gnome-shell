@@ -28,7 +28,7 @@
 
 extern GType gnome_shell_plugin_get_type (void);
 
-#define SHELL_DBUS_SERVICE "org.gnome.Shell"
+#define SHELL_DBUS_SERVICE "org.gnome.Shell2"
 #define MAGNIFIER_DBUS_SERVICE "org.gnome.Magnifier"
 
 #define OVERRIDES_SCHEMA "org.gnome.shell.overrides"
